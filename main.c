@@ -12,6 +12,17 @@ static unsigned char image[HEIGHT][BYTEWIDTH];
 static FT_Library library;
 static FT_Face face;
 static FT_Error err;
+/* Get the error string from a freetype error.
+ */
+const char *get_error_string(FT_Error err)
+{
+	#undef __FTERRORS_H__
+	#define FT_ERROR_START_LIST	switch(err) {
+	#define FT_ERRORDEF(e,v,s)	case e: return s;
+	#define FT_ERROR_END_LIST	}
+	#include FT_ERRORS_H
+	return "Unknown error.";
+}
 /* Put image to bitmap.
  */
 static void to_bitmap(FT_Bitmap *bitmap, FT_Int x, FT_Int y)
@@ -34,8 +45,8 @@ static void draw_glyph(unsigned char glyph, FT_Vector *pen, FT_Matrix *matrix)
 	FT_GlyphSlot slot = face->glyph;
 	FT_Set_Transform(face, matrix, pen);
 	if((err = FT_Load_Char(face, glyph, FT_LOAD_DEFAULT))) {
-		fprintf(stderr, "warning: failed FT_Load_Glyph 0x%X %s\n",
-			glyph, FT_Error_String(err));
+		fprintf(stderr, "warning: Glyph 0x%X: %s\n",
+			glyph, get_error_string(err));
 		return;
 	}
 	to_bitmap(&slot->bitmap, pen->x, pen->y);
@@ -75,12 +86,12 @@ int main(int argc, char **argv)
 	}
 	if((err = FT_Init_FreeType(&library))) {
 		fprintf(stderr, "Error: Init_FreeType failed: %s\n",
-			FT_Error_String(err));
+			get_error_string(err));
 		exit(1);
 	}
 	if((err = FT_New_Face(library, argv[1], 0, &face))) {
 		fprintf(stderr, "Error: FT_New_Face failed: %s\n",
-			FT_Error_String(err));
+			get_error_string(err));
 		FT_Done_FreeType(library);
 		exit(1);
 	}
