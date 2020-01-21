@@ -10,9 +10,9 @@
 #include FT_BITMAP_H
 
 #define WRITE_FILE	1
-#define WIDTH		512
-#define HEIGHT		512
-#define BYTEWIDTH	((WIDTH/8)*sizeof(unsigned char))
+#define WIDTH		256
+#define HEIGHT		256
+#define BYTEWIDTH	(WIDTH/8)
 
 /* some definitions */
 static unsigned char image[HEIGHT][BYTEWIDTH];
@@ -68,7 +68,9 @@ static void out_xbm(const char *name, int w, int h)
 	}
 	fprintf(fp, "#define BMP_WIDTH\t\t%d\n", WIDTH);
 	fprintf(fp, "#define BMP_HEIGHT\t\t%d\n", HEIGHT);
-	fprintf(fp, "#define BMP_PITCH\t\t%ld\n\n", BYTEWIDTH);
+	fprintf(fp, "#define BMP_PITCH\t\t%ld\n",
+			BYTEWIDTH*sizeof(unsigned char));
+	fprintf(fp, "#define BMP_BYTEWIDTH\t\t%d\n\n", BYTEWIDTH);
 	fprintf(fp, "static const unsigned char BMP_bits[] = {\n");
 	for(y = 0; y < h; y++) {
 		fprintf(fp, "\t");
@@ -84,7 +86,8 @@ static void out_xbm(const char *name, int w, int h)
 	UNUSED(name);
 	printf("#define BMP_WIDTH\t\t%d\n", WIDTH);
 	printf("#define BMP_HEIGHT\t\t%d\n", HEIGHT);
-	printf("#define BMP_PITCH\t\t%ld\n\n", BYTEWIDTH);
+	printf("#define BMP_PITCH\t\t%ld\n", BYTEWIDTH*sizeof(unsigned char));
+	printf("#define BMP_BYTEWIDTH\t\t%d\n\n", BYTEWIDTH);
 	printf("static const unsigned char BMP_bits[] = {\n");
 	for(y = 0; y < h; y++) {
 		printf("\t");
@@ -143,9 +146,9 @@ int main(int argc, char **argv)
 		pen_y += slot->advance.y >> 6;
 	}
 #if WRITE_FILE
-	out_xbm(argv[2], WIDTH, HEIGHT);
+	out_xbm(argv[2], BYTEWIDTH, HEIGHT);
 #else
-	out_xbm(NULL, WIDTH, HEIGHT);
+	out_xbm(NULL, BYTEWIDTH, HEIGHT);
 #endif
 	FT_Done_Face(face);
 	FT_Done_FreeType(library);
