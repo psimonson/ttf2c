@@ -9,9 +9,9 @@
 #include FT_FREETYPE_H
 #include FT_BITMAP_H
 
-#define WRITE_FILE	0
-#define WIDTH		300
-#define HEIGHT		300
+#define WRITE_FILE	1
+#define WIDTH		256
+#define HEIGHT		256
 #define BYTEWIDTH	(WIDTH/8)
 
 /* some definitions */
@@ -67,12 +67,14 @@ static void out_xbm(const char *name, int w, int h)
 		return;
 	}
 	fprintf(fp, "#define BMP_WIDTH\t\t%d\n", WIDTH);
-	fprintf(fp, "#define BMP_HEIGHT\t\t%d\n\n", HEIGHT);
+	fprintf(fp, "#define BMP_HEIGHT\t\t%d\n", HEIGHT);
+	fprintf(fp, "#define BMP_PITCH\t\t%ld\n\n",
+			BYTEWIDTH*sizeof(unsigned char));
 	fprintf(fp, "static const unsigned char BMP_bits[] = {\n");
 	for(y = 0; y < h; y++) {
 		fprintf(fp, "\t");
 		for(x = 0; x < w; x++) {
-			fprintf(fp, "0x%X, ", image[y][x]);
+			fprintf(fp, "0x%x, ", image[y][x]);
 		}
 		fprintf(fp, "\n");
 	}
@@ -81,13 +83,15 @@ static void out_xbm(const char *name, int w, int h)
 #else
 #define UNUSED(x)
 	UNUSED(name);
-	printf("#define BMP_width %d\n", WIDTH);
-	printf("#define BMP_height %d\n", HEIGHT);
-	printf("static char BMP_bits[] = {\n\n");
+	printf("#define BMP_WIDTH\t\t%d\n", WIDTH);
+	printf("#define BMP_HEIGHT\t\t%d\n", HEIGHT);
+	printf("#define BMP_PITCH\t\t%ld\n\n",
+			BYTEWIDTH*sizeof(unsigned char));
+	printf("static const unsigned char BMP_bits[] = {\n");
 	for(y = 0; y < h; y++) {
 		printf("\t");
 		for(x = 0; x < w; x++) {
-			printf("0x%X, ", image[y][x]);
+			printf("0x%x, ", image[y][x]);
 		}
 		printf("\n");
 	}
@@ -102,7 +106,7 @@ int main(int argc, char **argv)
 	FT_GlyphSlot slot;
 	int pen_x, pen_y, g;
 
-	memset(image, 0, BYTEWIDTH*HEIGHT);
+	memset(image, 0, WIDTH*HEIGHT);
 	if(argc != 3) {
 		fprintf(stderr, "Usage: %s <font.ttf> <out-name>\n", argv[0]);
 		return 1;
@@ -118,14 +122,14 @@ int main(int argc, char **argv)
 		FT_Done_FreeType(library);
 		exit(1);
 	}
-	if((err = FT_Set_Char_Size(face, 0, 16*64, 300, 300))) {
+	if((err = FT_Set_Char_Size(face, 0, 50*64, WIDTH, HEIGHT))) {
 		fprintf(stderr, "Error: %s\n", FT_Error_String(err));
 		FT_Done_Face(face);
 		FT_Done_FreeType(library);
 		exit(1);
 	}
-	pen_x = 300;
-	pen_y = 300;
+	pen_x = WIDTH;
+	pen_y = HEIGHT;
 	for(g = 0; g < face->num_glyphs; g++) {
 		int glyph_index = FT_Get_Char_Index(face, g);
 		err = FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT);
