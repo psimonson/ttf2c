@@ -10,12 +10,12 @@
 #include FT_BITMAP_H
 
 #define WRITE_FILE	1
-#define WIDTH		256
+#define WIDTH		768
 #define HEIGHT		256
-#define BYTEWIDTH	(WIDTH/8)
+#define PITCH		27
 
 /* some definitions */
-static unsigned char image[HEIGHT][BYTEWIDTH];
+static unsigned char image[HEIGHT][WIDTH];
 static FT_Library library;
 static FT_Face face;
 static FT_Error err;
@@ -48,7 +48,7 @@ static void to_bitmap(FT_Bitmap *bitmap, FT_Int x, FT_Int y)
 }
 /* Make an output file with xbm extension.
  */
-static void out_xbm(const char *name, int w, int h)
+static void out_xbm(const char *name, int w, int h, int p)
 {
 #if WRITE_FILE
 #ifndef MAX_PATH
@@ -66,16 +66,15 @@ static void out_xbm(const char *name, int w, int h)
 		perror("out_xbm()");
 		return;
 	}
-	fprintf(fp, "#define BMP_WIDTH\t\t%d\n", WIDTH);
-	fprintf(fp, "#define BMP_HEIGHT\t\t%d\n", HEIGHT);
-	fprintf(fp, "#define BMP_PITCH\t\t%ld\n",
-			BYTEWIDTH*sizeof(unsigned char));
-	fprintf(fp, "#define BMP_BYTEWIDTH\t\t%d\n\n", BYTEWIDTH);
-	fprintf(fp, "static const unsigned char BMP_bits[] = {\n");
+	fprintf(fp, "#define BMP_WIDTH\t\t%d\n", w);
+	fprintf(fp, "#define BMP_HEIGHT\t\t%d\n", h);
+	fprintf(fp, "#define BMP_PITCH\t\t%d\n\n", p);
+	fprintf(fp, "const unsigned char BMP_bits[] = {\n");
 	for(y = 0; y < h; y++) {
 		fprintf(fp, "\t");
 		for(x = 0; x < w; x++) {
-			fprintf(fp, "0x%x, ", image[y][x]);
+			fprintf(fp, "0x%x%s", image[y][x],
+				(y == (h-1) && x == (w-1) ? "" : ", "));
 		}
 		fprintf(fp, "\n");
 	}
@@ -84,15 +83,15 @@ static void out_xbm(const char *name, int w, int h)
 #else
 #define UNUSED(x)
 	UNUSED(name);
-	printf("#define BMP_WIDTH\t\t%d\n", WIDTH);
-	printf("#define BMP_HEIGHT\t\t%d\n", HEIGHT);
-	printf("#define BMP_PITCH\t\t%ld\n", BYTEWIDTH*sizeof(unsigned char));
-	printf("#define BMP_BYTEWIDTH\t\t%d\n\n", BYTEWIDTH);
-	printf("static const unsigned char BMP_bits[] = {\n");
+	printf("#define BMP_WIDTH\t\t%d\n", w);
+	printf("#define BMP_HEIGHT\t\t%d\n", h);
+	printf("#define BMP_PITCH\t\t%ld\n\n", p);
+	printf("const unsigned char BMP_bits[] = {\n");
 	for(y = 0; y < h; y++) {
 		printf("\t");
 		for(x = 0; x < w; x++) {
-			printf("0x%x, ", image[y][x]);
+			printf("0x%x%s", image[y][x],
+				(y == (h-1) && x == (w-1) ? "" : ", ")));
 		}
 		printf("\n");
 	}
@@ -107,7 +106,7 @@ int main(int argc, char **argv)
 	FT_GlyphSlot slot;
 	int pen_x, pen_y, g;
 
-	memset(image, 0, BYTEWIDTH*HEIGHT);
+	memset(image, 0, WIDTH*HEIGHT);
 	if(argc != 3) {
 		fprintf(stderr, "Usage: %s <font.ttf> <out-name>\n", argv[0]);
 		return 1;
@@ -146,9 +145,9 @@ int main(int argc, char **argv)
 		pen_y += slot->advance.y >> 6;
 	}
 #if WRITE_FILE
-	out_xbm(argv[2], BYTEWIDTH, HEIGHT);
+	out_xbm(argv[2], WIDTH, HEIGHT, slot->bitmap.pitch);
 #else
-	out_xbm(NULL, BYTEWIDTH, HEIGHT);
+	out_xbm(NULL, WIDTH, HEIGHT, slot->bitmap.pitch);
 #endif
 	FT_Done_Face(face);
 	FT_Done_FreeType(library);
