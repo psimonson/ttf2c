@@ -37,27 +37,13 @@ static void to_bitmap(FT_Bitmap *bitmap, FT_Int x, FT_Int y)
 	FT_Int x_max = x + bitmap->width;
 	FT_Int y_max = y + bitmap->rows;
 
-	for(i = x, p = 0; i < x_max; i++, p++)
+	for(i = x, p = 0; i < x_max; i++, p++) {
 		for(j = y, q = 0; j < y_max; j++, q++) {
 			if(i < 0 || j < 0 || i >= WIDTH || j >= HEIGHT)
 				continue;
 			image[j][i] |= bitmap->buffer[q*bitmap->width+p];
 		}
-}
-/* Draw glyph to bitmap.
- */
-static void draw_glyph(unsigned char glyph, FT_Vector *pen, FT_Matrix *matrix)
-{
-	FT_GlyphSlot slot = face->glyph;
-	FT_Set_Transform(face, matrix, pen);
-	if((err = FT_Load_Char(face, glyph, FT_LOAD_RENDER))) {
-		fprintf(stderr, "warning: Glyph 0x%X: %s\n",
-			glyph, get_error_string(err));
-		return;
 	}
-	to_bitmap(&slot->bitmap, pen->x, pen->y);
-	pen->x += slot->advance.x;
-	pen->y += slot->advance.y;
 }
 /* Make an output file with xbm extension.
  */
@@ -113,8 +99,10 @@ static void out_xbm(const char *name, int w, int h)
 int main(int argc, char **argv)
 {
 	FT_Matrix matrix;
+	FT_GlyphSlot slot;
 	FT_Vector pen;
 	double angle;
+	int target_height;
 	int g;
 
 	memset(image, 0, WIDTH*HEIGHT);
@@ -133,21 +121,35 @@ int main(int argc, char **argv)
 		FT_Done_FreeType(library);
 		exit(1);
 	}
-	if((err = FT_Set_Char_Size(face, 0, 16*64, 300, 300))) {
+	if((err = FT_Set_Char_Size(face, 0, 50*64, 300, 300))) {
 		fprintf(stderr, "Error: %s\n", FT_Error_String(err));
 		FT_Done_Face(face);
 		FT_Done_FreeType(library);
 		exit(1);
 	}
+	slot = face->glyph;
+	target_height = HEIGHT;
 	angle = (25.0/360)*3.14159*2; /* use 25 degrees */
 	matrix.xx = (FT_Fixed)( cos(angle)*10000L );
 	matrix.xy = (FT_Fixed)(-sin(angle)*10000L );
 	matrix.yy = (FT_Fixed)( sin(angle)*10000L );
 	matrix.yx = (FT_Fixed)( cos(angle)*10000L );
-	pen.x = 0 * 64;
-	pen.y = 0 * 64;
-	for(g = 0; g < 256; g++)
-		draw_glyph(g, &pen, &matrix);
+	pen.x = 300*64;
+	pen.y = (target_height-200)*64;
+	for(g = 0; g < 256; g++) {
+		FT_Set_Transform(face, &matrix, &pen);
+
+		err = FT_Load_Char(face, g, FT_LOAD_RENDER);
+		if(err) {
+			fprintf(stderr, "Warning: %s\n",
+				get_error_string(err));
+			continue;
+		}
+		to_bitmap(&slot->bitmap, slot->bitmap_left,
+			target_height-slot->bitmap_top);
+		pen.x += slot->advance.x;
+		pen.y += slot->advance.y;
+	}
 	out_xbm(argv[2], WIDTH, HEIGHT);
 	FT_Done_Face(face);
 	FT_Done_FreeType(library);
