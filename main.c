@@ -44,7 +44,7 @@ static void draw_glyph(unsigned char glyph, FT_Vector *pen, FT_Matrix *matrix)
 {
 	FT_GlyphSlot slot = face->glyph;
 	FT_Set_Transform(face, matrix, pen);
-	if((err = FT_Load_Char(face, glyph, FT_LOAD_DEFAULT))) {
+	if((err = FT_Load_Char(face, glyph, FT_LOAD_RENDER))) {
 		fprintf(stderr, "warning: Glyph 0x%X: %s\n",
 			glyph, get_error_string(err));
 		return;
