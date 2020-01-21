@@ -12,6 +12,7 @@
 #define WRITE_FILE	1
 #define WIDTH		640
 #define HEIGHT		480
+#define BYTEWIDTH	(WIDTH/8)
 
 /* some definitions */
 static unsigned char image[HEIGHT][WIDTH];
@@ -65,11 +66,11 @@ static void out_xbm(const char *name, int w, int h)
 		perror("out_xbm()");
 		return;
 	}
-	fprintf(fp, "#define BMP_WIDTH\t%d\n", WIDTH);
-	fprintf(fp, "#define BMP_HEIGHT\t%d\n\n", HEIGHT);
-	fprintf(fp, "static char BMP_bits[] = {\n");
+	fprintf(fp, "#define BMP_WIDTH\t\t%d\n", WIDTH);
+	fprintf(fp, "#define BMP_HEIGHT\t\t%d\n\n", HEIGHT);
+	fprintf(fp, "static const unsigned char BMP_bits[] = {\n");
 	for(y = 0; y < h; y++) {
-		printf("\t");
+		fprintf(fp, "\t");
 		for(x = 0; x < w; x++) {
 			fprintf(fp, "0x%X, ", image[y][x]);
 		}
@@ -82,7 +83,7 @@ static void out_xbm(const char *name, int w, int h)
 	UNUSED(name);
 	printf("#define BMP_width %d\n", WIDTH);
 	printf("#define BMP_height %d\n", HEIGHT);
-	printf("static char BMP_bits[] = {\n");
+	printf("static char BMP_bits[] = {\n\n");
 	for(y = 0; y < h; y++) {
 		printf("\t");
 		for(x = 0; x < w; x++) {
@@ -105,7 +106,7 @@ int main(int argc, char **argv)
 	int target_height;
 	int g;
 
-	memset(image, 0, WIDTH*HEIGHT);
+	memset(image, 0, BYTEWIDTH*HEIGHT);
 	if(argc != 3) {
 		fprintf(stderr, "Usage: %s <font.ttf> <out-name>\n", argv[0]);
 		return 1;
@@ -121,7 +122,7 @@ int main(int argc, char **argv)
 		FT_Done_FreeType(library);
 		exit(1);
 	}
-	if((err = FT_Set_Char_Size(face, 0, 50*64, 300, 300))) {
+	if((err = FT_Set_Char_Size(face, 0, 50*64, 100, 0))) {
 		fprintf(stderr, "Error: %s\n", FT_Error_String(err));
 		FT_Done_Face(face);
 		FT_Done_FreeType(library);
@@ -136,7 +137,7 @@ int main(int argc, char **argv)
 	matrix.yx = (FT_Fixed)( cos(angle)*10000L );
 	pen.x = 300*64;
 	pen.y = (target_height-200)*64;
-	for(g = 0; g < 256; g++) {
+	for(g = 0; g < face->num_glyphs; g++) {
 		FT_Set_Transform(face, &matrix, &pen);
 
 		err = FT_Load_Char(face, g, FT_LOAD_RENDER);
