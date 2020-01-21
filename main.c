@@ -12,10 +12,9 @@
 #define WRITE_FILE	1
 #define WIDTH		640
 #define HEIGHT		480
-#define BYTEWIDTH	((int)((WIDTH)/8))
 
 /* some definitions */
-static unsigned char image[HEIGHT][BYTEWIDTH];
+static unsigned char image[HEIGHT][WIDTH];
 static FT_Library library;
 static FT_Face face;
 static FT_Error err;
@@ -118,7 +117,7 @@ int main(int argc, char **argv)
 	double angle;
 	int g;
 
-	memset(image, 0, BYTEWIDTH*HEIGHT);
+	memset(image, 0, WIDTH*HEIGHT);
 	if(argc != 3) {
 		fprintf(stderr, "Usage: %s <font.ttf> <out-name>\n", argv[0]);
 		return 1;
@@ -149,7 +148,7 @@ int main(int argc, char **argv)
 	pen.y = 0 * 64;
 	for(g = 0; g < 256; g++)
 		draw_glyph(g, &pen, &matrix);
-	out_xbm(argv[2], BYTEWIDTH, HEIGHT);
+	out_xbm(argv[2], WIDTH, HEIGHT);
 	FT_Done_Face(face);
 	FT_Done_FreeType(library);
 	return 0;
