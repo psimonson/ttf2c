@@ -1,8 +1,15 @@
+#ifndef _WIN32
+#define _GNU_SOURCE 1
+#endif
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_BITMAP_H
-#include <math.h>
 
+#define WRITE_FILE	1
 #define WIDTH		640
 #define HEIGHT		480
 #define BYTEWIDTH	((int)((WIDTH)/8))
@@ -55,20 +62,52 @@ static void draw_glyph(unsigned char glyph, FT_Vector *pen, FT_Matrix *matrix)
 }
 /* Make an output file with xbm extension.
  */
-static void out_xbm(int w, int h)
+static void out_xbm(const char *name, int w, int h)
 {
+#if WRITE_FILE
+#ifndef MAX_PATH
+#define MAX_PATH 260
+#endif
+	char filename[MAX_PATH];
+#endif
+	FILE *fp;
 	int x, y;
+
+#if WRITE_FILE
+	memset(filename, 0, sizeof(filename));
+	snprintf(filename, sizeof(filename), "%s.h", name);
+	if((fp = fopen(filename, "wb")) == NULL) {
+		perror("out_xbm()");
+		return;
+	}
+	fprintf(fp, "#define BMP_WIDTH\t%d\n", WIDTH);
+	fprintf(fp, "#define BMP_HEIGHT\t%d\n\n", HEIGHT);
+	fprintf(fp, "static char BMP_bits[] = {\n");
+	for(y = 0; y < h; y++) {
+		printf("\t");
+		for(x = 0; x < w; x++) {
+			fprintf(fp, "0x%X, ", image[y][x]);
+		}
+		fprintf(fp, "\n");
+	}
+	fprintf(fp, "\n};\n");
+	fclose(fp);
+#else
+#define UNUSED(x)
+	UNUSED(name);
 	printf("#define BMP_width %d\n", WIDTH);
 	printf("#define BMP_height %d\n", HEIGHT);
 	printf("static char BMP_bits[] = {\n");
 	for(y = 0; y < h; y++) {
 		printf("\t");
 		for(x = 0; x < w; x++) {
-			printf("0x%0X, ", image[y][x]);
+			printf("0x%X, ", image[y][x]);
 		}
 		printf("\n");
 	}
 	printf("\n};\n");
+#undef UNUSED(x)
+#endif
 }
 /* Program to convert from ttf to C array.
  */
@@ -80,8 +119,8 @@ int main(int argc, char **argv)
 	int g;
 
 	memset(image, 0, BYTEWIDTH*HEIGHT);
-	if(argc != 2) {
-		fprintf(stderr, "Usage: %s <font.ttf>\n", argv[0]);
+	if(argc != 3) {
+		fprintf(stderr, "Usage: %s <font.ttf> <out-name>\n", argv[0]);
 		return 1;
 	}
 	if((err = FT_Init_FreeType(&library))) {
@@ -95,22 +134,22 @@ int main(int argc, char **argv)
 		FT_Done_FreeType(library);
 		exit(1);
 	}
-	if((err = FT_Set_Char_Size(face, 50*64, 0, 100, 0))) {
+	if((err = FT_Set_Char_Size(face, 0, 16*64, 300, 300))) {
 		fprintf(stderr, "Error: %s\n", FT_Error_String(err));
 		FT_Done_Face(face);
 		FT_Done_FreeType(library);
 		exit(1);
 	}
 	angle = (25.0/360)*3.14159*2; /* use 25 degrees */
-	matrix.xx = (FT_Fixed)( cos(angle)*0x10000L );
-	matrix.xy = (FT_Fixed)(-sin(angle)*0x10000L );
-	matrix.yy = (FT_Fixed)( sin(angle)*0x10000L );
-	matrix.yx = (FT_Fixed)( cos(angle)*0x10000L );
-	pen.x = 300 * 64;
-	pen.y = (HEIGHT - 200) * 64;
+	matrix.xx = (FT_Fixed)( cos(angle)*10000L );
+	matrix.xy = (FT_Fixed)(-sin(angle)*10000L );
+	matrix.yy = (FT_Fixed)( sin(angle)*10000L );
+	matrix.yx = (FT_Fixed)( cos(angle)*10000L );
+	pen.x = 0 * 64;
+	pen.y = 0 * 64;
 	for(g = 0; g < 256; g++)
 		draw_glyph(g, &pen, &matrix);
-	out_xbm(BYTEWIDTH, HEIGHT);
+	out_xbm(argv[2], BYTEWIDTH, HEIGHT);
 	FT_Done_Face(face);
 	FT_Done_FreeType(library);
 	return 0;
