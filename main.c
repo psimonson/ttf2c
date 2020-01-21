@@ -9,9 +9,9 @@
 #include FT_FREETYPE_H
 #include FT_BITMAP_H
 
-#define WRITE_FILE	1
-#define WIDTH		640
-#define HEIGHT		480
+#define WRITE_FILE	0
+#define WIDTH		300
+#define HEIGHT		300
 #define BYTEWIDTH	(WIDTH/8)
 
 /* some definitions */
@@ -55,8 +55,8 @@ static void out_xbm(const char *name, int w, int h)
 #define MAX_PATH 260
 #endif
 	char filename[MAX_PATH];
-#endif
 	FILE *fp;
+#endif
 	int x, y;
 
 #if WRITE_FILE
@@ -92,19 +92,15 @@ static void out_xbm(const char *name, int w, int h)
 		printf("\n");
 	}
 	printf("\n};\n");
-#undef UNUSED(x)
+#undef UNUSED
 #endif
 }
 /* Program to convert from ttf to C array.
  */
 int main(int argc, char **argv)
 {
-	FT_Matrix matrix;
 	FT_GlyphSlot slot;
-	FT_Vector pen;
-	double angle;
-	int target_height;
-	int g;
+	int pen_x, pen_y, g;
 
 	memset(image, 0, BYTEWIDTH*HEIGHT);
 	if(argc != 3) {
@@ -122,36 +118,39 @@ int main(int argc, char **argv)
 		FT_Done_FreeType(library);
 		exit(1);
 	}
-	if((err = FT_Set_Char_Size(face, 0, 50*64, 100, 0))) {
+	if((err = FT_Set_Char_Size(face, 0, 16*64, 300, 300))) {
 		fprintf(stderr, "Error: %s\n", FT_Error_String(err));
 		FT_Done_Face(face);
 		FT_Done_FreeType(library);
 		exit(1);
 	}
-	slot = face->glyph;
-	target_height = HEIGHT;
-	angle = (25.0/360)*3.14159*2; /* use 25 degrees */
-	matrix.xx = (FT_Fixed)( cos(angle)*10000L );
-	matrix.xy = (FT_Fixed)(-sin(angle)*10000L );
-	matrix.yy = (FT_Fixed)( sin(angle)*10000L );
-	matrix.yx = (FT_Fixed)( cos(angle)*10000L );
-	pen.x = 300*64;
-	pen.y = (target_height-200)*64;
+	pen_x = 300;
+	pen_y = 300;
 	for(g = 0; g < face->num_glyphs; g++) {
-		FT_Set_Transform(face, &matrix, &pen);
-
-		err = FT_Load_Char(face, g, FT_LOAD_RENDER);
+		int glyph_index = FT_Get_Char_Index(face, g);
+		err = FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT);
 		if(err) {
 			fprintf(stderr, "Warning: %s\n",
 				get_error_string(err));
 			continue;
 		}
+		slot = face->glyph;
+		err = FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
+		if(err) {
+			fprintf(stderr, "Warning %s\n",
+				get_error_string(err));
+			continue;
+		}
 		to_bitmap(&slot->bitmap, slot->bitmap_left,
-			target_height-slot->bitmap_top);
-		pen.x += slot->advance.x;
-		pen.y += slot->advance.y;
+			HEIGHT-slot->bitmap_top);
+		pen_x += slot->advance.x >> 6;
+		pen_y += slot->advance.y >> 6;
 	}
+#if WRITE_FILE
 	out_xbm(argv[2], WIDTH, HEIGHT);
+#else
+	out_xbm(NULL, WIDTH, HEIGHT);
+#endif
 	FT_Done_Face(face);
 	FT_Done_FreeType(library);
 	return 0;
