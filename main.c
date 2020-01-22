@@ -80,14 +80,12 @@ static void out_header(unsigned char **image, const char *name,
 			"BMP_GLYPHS", "BMP_BPG");
 	for(y = 0; y < face->num_glyphs; y++) {
 		fprintf(fp, "\t{ ");
-		for(x = 0; x < bitmap->pitch; x+=3) {
-			fprintf(fp, "0x%x, 0x%x, 0x%x%s", image[y][x],
-				image[y][x+1], image[y][x+2],
-				(y == (face->num_glyphs-1) && x == (bitmap->pitch-1) ? "" : ", "));
+		for(x = 0; x < bitmap->pitch*3; x++) {
+			fprintf(fp, "0x%x, ", image[y][x]);
 		}
-		fprintf(fp, "}%s", (y == (face->num_glyphs-1) ? "" : ",\n"));
+		fprintf(fp, " }\n");
 	}
-	fprintf(fp, "\n};\n");
+	fprintf(fp, "};\n");
 	fclose(fp);
 #else
 #define UNUSED(x)
@@ -100,12 +98,10 @@ static void out_header(unsigned char **image, const char *name,
 			"BMP_GLYPHS", "BMP_BPG");
 	for(y = 0; y < face->num_glyphs; y++) {
 		printf("\t{ ");
-		for(x = 0; x < bitmap->pitch; x++) {
-			printf("0x%x, 0x%x, 0x%x%s", image[y][x],
-				image[y][x+1], image[y][x+2],
-				(y == (face->num_glyphs-1) && x == (bitmap->pitch-1) ? "" : ", "));
+		for(x = 0; x < bitmap->pitch*3; x++) {
+			printf("0x%x%s", image[y][x]);
 		}
-		printf("}%s", (y == (face->num_glyphs-1) ? "" : ",\n"));
+		printf(" }\n");
 	}
 	printf("\n};\n");
 #undef UNUSED
