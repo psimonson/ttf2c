@@ -81,9 +81,10 @@ static void out_header(unsigned char **image, const char *name,
 	for(y = 0; y < face->num_glyphs; y++) {
 		fprintf(fp, "\t{ ");
 		for(x = 0; x < bitmap->pitch*3; x++) {
-			fprintf(fp, "0x%x, ", image[y][x]);
+			fprintf(fp, "0x%x%s", image[y][x],
+				(x == (bitmap->pitch*3-1) ? "" : ", "));
 		}
-		fprintf(fp, " }\n");
+		fprintf(fp, " }%s", (y == (face->num_glyphs-1) ? "\n" : ",\n"));
 	}
 	fprintf(fp, "};\n");
 	fclose(fp);
@@ -99,9 +100,10 @@ static void out_header(unsigned char **image, const char *name,
 	for(y = 0; y < face->num_glyphs; y++) {
 		printf("\t{ ");
 		for(x = 0; x < bitmap->pitch*3; x++) {
-			printf("0x%x%s", image[y][x]);
+			printf("0x%x%s", image[y][x],
+				(x == (bitmap->pitch*3-1) ? "" : ", ");
 		}
-		printf(" }\n");
+		printf(" }%s", (y == (face->num_glyphs-1) ? "\n" : ",\n"));
 	}
 	printf("\n};\n");
 #undef UNUSED
