@@ -9,8 +9,7 @@
 #include FT_FREETYPE_H
 #include FT_BITMAP_H
 
-#define WRITE_FILE	0	/* write to a file */
-#define BPG		32	/* bytes per glyph */
+#define WRITE_FILE	1	/* write to a file */
 
 /* some definitions */
 static FT_Library library;
@@ -53,8 +52,8 @@ static void to_bitmap(unsigned char **image, FT_Bitmap *bitmap,
 }
 /* Make an output file with xbm extension.
  */
-static void out_header(unsigned char **image, const char *name, FT_Int nglyphs,
-	FT_Int pitch)
+static void out_header(unsigned char **image, const char *name,
+	FT_Bitmap *bitmap)
 {
 #if WRITE_FILE
 #ifndef MAX_PATH
@@ -63,7 +62,8 @@ static void out_header(unsigned char **image, const char *name, FT_Int nglyphs,
 	char filename[MAX_PATH];
 	FILE *fp;
 #endif
-	int x, y;
+	unsigned int y;
+	int x;
 
 #if WRITE_FILE
 	memset(filename, 0, sizeof(filename));
@@ -75,17 +75,17 @@ static void out_header(unsigned char **image, const char *name, FT_Int nglyphs,
 	fprintf(fp, "#define BMP_GLYPHS\t\t%d\t/* Number of glyphs */\n",
 			nglyphs);
 	fprintf(fp, "#define BMP_BPG\t\t\t%d\t/* Bytes per glyph */\n\n",
-			pitch*3);
+			bitmap->pitch*3);
 	fprintf(fp, "const unsigned char BMP_bits[%s][%s] = {\n",
 			"BMP_GLYPHS", "BMP_BPG");
-	for(y = 0; y < nglyphs; y++) {
+	for(y = 0; y < face->num_glyphs; y++) {
 		fprintf(fp, "\t{ ");
-		for(x = 0; x < pitch*3; x++) {
+		for(x = 0; x < bitmap->pitch; x+=3) {
 			fprintf(fp, "0x%x, 0x%x, 0x%x%s", image[y][x],
 				image[y][x+1], image[y][x+2],
-				(y == (nglyphs-1) && x == (BPG-1) ? "" : ", "));
+				(y == (face->num_glyphs-1) && x == (bitmap->pitch-1) ? "" : ", "));
 		}
-		fprintf(fp, "}%s", (y == (nglyphs-1) ? "" : ",\n"));
+		fprintf(fp, "}%s", (y == (face->num_glyphs-1) ? "" : ",\n"));
 	}
 	fprintf(fp, "\n};\n");
 	fclose(fp);
@@ -95,17 +95,17 @@ static void out_header(unsigned char **image, const char *name, FT_Int nglyphs,
 	printf("#define BMP_GLYPHS\t\t%d\t/* Number of glyphs */\n",
 			nglyphs);
 	printf("#define BMP_BPG\t\t\t%d\t/* Bytes per glyph */\n\n",
-			pitch*3);
+			bitmap->pitch*3);
 	printf("const unsigned char BMP_bits[%s][%s] = {\n",
 			"BMP_GLYPHS", "BMP_BPG");
-	for(y = 0; y < nglyphs; y++) {
+	for(y = 0; y < face->num_glyphs; y++) {
 		printf("\t{ ");
-		for(x = 0; x < pitch*3; x++) {
+		for(x = 0; x < bitmap->pitch; x++) {
 			printf("0x%x, 0x%x, 0x%x%s", image[y][x],
 				image[y][x+1], image[y][x+2],
-				(y == (nglyphs-1) && x == (BPG-1) ? "" : ", "));
+				(y == (face->num_glyphs-1) && x == (bitmap->pitch-1) ? "" : ", "));
 		}
-		printf("}%s", (y == (nglyphs-1) ? "" : ",\n"));
+		printf("}%s", (y == (face->num_glyphs-1) ? "" : ",\n"));
 	}
 	printf("\n};\n");
 #undef UNUSED
@@ -165,9 +165,12 @@ int main(int argc, char **argv)
 		to_bitmap(image, &slot->bitmap, &slot->metrics);
 	}
 #if WRITE_FILE
-	out_header(image, argv[2], face->num_glyphs, pitch);
+	if(argc == 3)
+		out_header(image, argv[2], &slot->bitmap);
+	else
+		out_header(image, "font", &slot->bitmap);
 #else
-	out_header(image, NULL, face->num_glyphs, face->glyph->bitmap.pitch);
+	out_header(image, NULL, &slot->bitmap);
 #endif
 	FT_Done_Face(face);
 	FT_Done_FreeType(library);
