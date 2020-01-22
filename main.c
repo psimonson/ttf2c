@@ -82,10 +82,10 @@ static void out_header(unsigned char **image, const char *name,
 			"BMP_GLYPHS", "BMP_BPG");
 	for(i = 0; i < nglyphs; i++) {
 		fprintf(fp, "\t{ ");
-		for(x = 0; x < pitch*3; x+=3) {
+		for(x = 0; x < pitch*3; x++) {
 			fprintf(fp, "0x%x%s",
 				image[i][x],
-				(x == (pitch*3-3) ? "" : ", "));
+				(x == (pitch*3-1) ? "" : ", "));
 		}
 		fprintf(fp, " }%s", (i == (nglyphs-1) ? "\n" : ",\n"));
 	}
@@ -104,10 +104,10 @@ static void out_header(unsigned char **image, const char *name,
 			"BMP_GLYPHS", "BMP_BPG");
 	for(i = 0; i < nglyphs; i++) {
 		printf("\t{ ");
-		for(x = 0; x < pitch*3; x+=3) {
+		for(x = 0; x < pitch*3; x++) {
 			printf("0x%x%s",
 				image[i][x],
-				(x == (pitch*3-3) ? "" : ", "));
+				(x == (pitch*3-1) ? "" : ", "));
 		}
 		printf(" }%s", (i == (nglyphs-1) ? "\n" : ",\n"));
 	}
