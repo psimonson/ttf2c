@@ -45,9 +45,9 @@ static void to_bitmap(unsigned char **image, FT_Bitmap *bitmap,
 			if(col < 0 || col >= bitmap->pitch
 				|| row >= bitmap->rows)
 				continue;
-			image[y][x] |= bitmap->buffer[(row*bitmap->pitch+col)*3];
-			image[y][x+1] |= bitmap->buffer[(row*bitmap->pitch+col)*3+1];
-			image[y][x+2] |= bitmap->buffer[(row*bitmap->pitch+col)*3+2];
+			image[row][col] |= bitmap->buffer[(row*bitmap->pitch+col)*3];
+			image[row][col+1] |= bitmap->buffer[(row*bitmap->pitch+col)*3+1];
+			image[row][col+2] |= bitmap->buffer[(row*bitmap->pitch+col)*3+2];
 		}
 	}
 }
