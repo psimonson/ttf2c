@@ -63,7 +63,7 @@ static void out_header(unsigned char **image, const char *name,
 	FILE *fp;
 #endif
 	unsigned int i;
-	int x, y;
+	int x;
 
 #if WRITE_FILE
 	memset(filename, 0, sizeof(filename));
@@ -81,17 +81,13 @@ static void out_header(unsigned char **image, const char *name,
 	fprintf(fp, "const unsigned char BMP_bits[%s][%s] = {\n",
 			"BMP_GLYPHS", "BMP_BPG");
 	for(i = 0; i < nglyphs; i++) {
-		for(y = 0; y < 256; y++) {
-			fprintf(fp, "\t{ ");
-			for(x = 0; x < pitch*3; x+=3) {
-				fprintf(fp, "0x%x, 0x%x, 0x%x%s",
-					image[i][y*pitch+x],
-					image[i][y*pitch+x+1],
-					image[i][y*pitch+x+2],
-					(x == (pitch*3-3) ? "" : ", "));
-			}
-			fprintf(fp, " }%s", (y == 255 ? "\n" : ",\n"));
+		fprintf(fp, "\t{ ");
+		for(x = 0; x < pitch*3; x+=3) {
+			fprintf(fp, "0x%x%s",
+				image[i][x],
+				(x == (pitch*3-3) ? "" : ", "));
 		}
+		fprintf(fp, " }%s", (i == (nglyphs-1) ? "\n" : ",\n"));
 	}
 	fprintf(fp, "};\n");
 	fclose(fp);
@@ -107,17 +103,13 @@ static void out_header(unsigned char **image, const char *name,
 	printf("const unsigned char BMP_bits[%s][%s] = {\n",
 			"BMP_GLYPHS", "BMP_BPG");
 	for(i = 0; i < nglyphs; i++) {
-		for(y = 0; y < 256; y++) {
-			printf("\t{ ");
-			for(x = 0; x < pitch*3; x+=3) {
-				printf("0x%x, 0x%x, 0x%x%s",
-					image[i][y*pitch+x],
-					image[i][y*pitch+x+1],
-					image[i][y*pitch+x+2],
-					(x == (pitch*3-3) ? "" : ", "));
-			}
-			printf(" }%s", (y == 255 ? "\n" : ",\n"));
+		printf("\t{ ");
+		for(x = 0; x < pitch*3; x+=3) {
+			printf("0x%x%s",
+				image[i][x],
+				(x == (pitch*3-3) ? "" : ", "));
 		}
+		printf(" }%s", (i == (nglyphs-1) ? "\n" : ",\n"));
 	}
 	printf("};\n");
 #undef UNUSED
