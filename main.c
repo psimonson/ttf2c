@@ -75,15 +75,15 @@ static void out_header(unsigned char **image, const char *name, FT_Int nglyphs,
 	fprintf(fp, "#define BMP_GLYPHS\t\t%d\t/* Number of glyphs */\n",
 			nglyphs);
 	fprintf(fp, "#define BMP_BPG\t\t\t%d\t/* Bytes per glyph */\n\n",
-			pitch);
+			pitch*3);
 	fprintf(fp, "const unsigned char BMP_bits[%s][%s] = {\n",
 			"BMP_GLYPHS", "BMP_BPG");
 	for(y = 0; y < nglyphs; y++) {
 		fprintf(fp, "\t{ ");
-		for(x = 0; x < BPG; x++) {
-			fprintf(fp, "0x%x%s", image[y][x],
-				(y == (nglyphs-1) && x == (BPG-1) ?
-				 "" : ", "));
+		for(x = 0; x < pitch*3; x++) {
+			fprintf(fp, "0x%x, 0x%x, 0x%x%s", image[y][x],
+				image[y][x+1], image[y][x+2],
+				(y == (nglyphs-1) && x == (BPG-1) ? "" : ", "));
 		}
 		fprintf(fp, "}%s", (y == (nglyphs-1) ? "" : ",\n"));
 	}
@@ -95,13 +95,14 @@ static void out_header(unsigned char **image, const char *name, FT_Int nglyphs,
 	printf("#define BMP_GLYPHS\t\t%d\t/* Number of glyphs */\n",
 			nglyphs);
 	printf("#define BMP_BPG\t\t\t%d\t/* Bytes per glyph */\n\n",
-			pitch);
+			pitch*3);
 	printf("const unsigned char BMP_bits[%s][%s] = {\n",
 			"BMP_GLYPHS", "BMP_BPG");
 	for(y = 0; y < nglyphs; y++) {
 		printf("\t{ ");
-		for(x = 0; x < BPG; x++) {
-			printf("0x%x%s", image[y][x],
+		for(x = 0; x < pitch*3; x++) {
+			printf("0x%x, 0x%x, 0x%x%s", image[y][x],
+				image[y][x+1], image[y][x+2],
 				(y == (nglyphs-1) && x == (BPG-1) ? "" : ", "));
 		}
 		printf("}%s", (y == (nglyphs-1) ? "" : ",\n"));
