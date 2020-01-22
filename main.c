@@ -9,16 +9,14 @@
 #include FT_FREETYPE_H
 #include FT_BITMAP_H
 
-#define WRITE_FILE	1
-#define WIDTH		768
-#define HEIGHT		256
-#define PITCH		27
+#define WRITE_FILE	0	/* write to a file */
+#define IMAGE_PITCH	27	/* how many bytes per character */
 
 /* some definitions */
-static unsigned char image[HEIGHT][WIDTH];
 static FT_Library library;
 static FT_Face face;
 static FT_Error err;
+static FT_Int nglyphs, pitch;
 /* Get the error string from a freetype error.
  */
 const char *get_error_string(FT_Error err)
@@ -32,7 +30,8 @@ const char *get_error_string(FT_Error err)
 }
 /* Put image to bitmap.
  */
-static void to_bitmap(FT_Bitmap *bitmap, FT_Int x, FT_Int y)
+static void to_bitmap(unsigned char *image[IMAGE_PITCH], FT_Bitmap *bitmap,
+	FT_Int x, FT_Int y)
 {
 	FT_Int i, j, p, q;
 	FT_Int x_max = x + bitmap->width;
@@ -40,7 +39,7 @@ static void to_bitmap(FT_Bitmap *bitmap, FT_Int x, FT_Int y)
 
 	for(i = y, q = 0; i < y_max; i++, q++) {
 		for(j = x, p = 0; j < x_max; j++, p++) {
-			if(i < 0 || j < 0 || i >= WIDTH || j >= HEIGHT)
+			if(i < 0 || j < 0 || i >= nglyphs || j >= pitch)
 				continue;
 			image[j][i] |= bitmap->buffer[q*bitmap->width+p];
 		}
@@ -48,8 +47,8 @@ static void to_bitmap(FT_Bitmap *bitmap, FT_Int x, FT_Int y)
 }
 /* Make an output file with xbm extension.
  */
-static void out_xbm(const char *name, int w, int h, FT_Int nglyphs,
-	FT_Int pitch)
+static void out_xbm(unsigned char *image[IMAGE_PITCH], const char *name,
+	FT_Int nglyphs,	FT_Int pitch)
 {
 #if WRITE_FILE
 #ifndef MAX_PATH
@@ -71,13 +70,13 @@ static void out_xbm(const char *name, int w, int h, FT_Int nglyphs,
 	fprintf(fp, "#define BMP_PITCH\t\t%d\n\n", pitch);
 	fprintf(fp, "const unsigned char BMP_bits[%s][%s] = {\n",
 			"BMP_GLYPHS", "BMP_PITCH");
-	for(y = 0; y <= h; y++) {
+	for(y = 0; y <= nglyphs; y++) {
 		fprintf(fp, "\t{ ");
-		for(x = 0; x <= w; x++) {
+		for(x = 0; x <= pitch; x++) {
 			fprintf(fp, "0x%x%s", image[y][x],
-				(y == h && x == w ? "" : ", "));
+				(y == nglyphs && x == pitch ? "" : ", "));
 		}
-		fprintf(fp, "}%s", (y == h ? "" : ",\n"));
+		fprintf(fp, "}%s", (y == nglyphs ? "" : ",\n"));
 	}
 	fprintf(fp, "\n};\n");
 	fclose(fp);
@@ -88,13 +87,13 @@ static void out_xbm(const char *name, int w, int h, FT_Int nglyphs,
 	printf("#define BMP_PITCH\t\t%d\n\n", pitch);
 	printf("const unsigned char BMP_bits[%s][%s] = {\n",
 			"BMP_GLYPHS", "BMP_PITCH");
-	for(y = 0; y <= h; y++) {
+	for(y = 0; y <= nglyphs; y++) {
 		printf("\t{ ");
-		for(x = 0; x <= w; x++) {
+		for(x = 0; x <= pitch; x++) {
 			printf("0x%x%s", image[y][x],
-				(y == h && x == w ? "" : ", "));
+				(y == nglyphs && x == pitch ? "" : ", "));
 		}
-		printf("}%s", (y == h ? "" : ",\n"));
+		printf("}%s", (y == nglyphs ? "" : ",\n"));
 	}
 	printf("\n};\n");
 #undef UNUSED
@@ -104,10 +103,11 @@ static void out_xbm(const char *name, int w, int h, FT_Int nglyphs,
  */
 int main(int argc, char **argv)
 {
+	unsigned char **image;
 	FT_GlyphSlot slot;
 	int pen_x, pen_y, g;
+	int i, j;
 
-	memset(image, 0, WIDTH*HEIGHT);
 	if(argc < 2 || argc > 3) {
 		fprintf(stderr, "Usage: %s <font.ttf> <out-name>\n", argv[0]);
 		return 1;
@@ -129,9 +129,29 @@ int main(int argc, char **argv)
 		FT_Done_FreeType(library);
 		exit(1);
 	}
+	nglyphs = face->num_glyphs;
+	image = (unsigned char **)malloc(nglyphs*sizeof(unsigned char *));
+	if(image == NULL) {
+		FT_Done_Face(face);
+		FT_Done_FreeType(library);
+		exit(2);
+	}
+	for(i = 0; i < nglyphs; i++) {
+		image[i] = malloc(IMAGE_PITCH*sizeof(unsigned char));
+		if(image[i] == NULL)
+			break;
+	}
+	if(image[i] == NULL) {
+		for(j = 0; j < i; j++)
+			free(image[i]);
+		FT_Done_Face(face);
+		FT_Done_FreeType(library);
+		exit(3);
+	}
 	pen_x = 100;
 	pen_y = 100;
-	for(g = 0; g < face->num_glyphs; g++) {
+	memset(*image, 0, nglyphs*IMAGE_PITCH);
+	for(g = 0; g < nglyphs; g++) {
 		int glyph_index = FT_Get_Char_Index(face, g);
 		err = FT_Load_Glyph(face, glyph_index, FT_LOAD_RENDER);
 		if(err) {
@@ -140,17 +160,20 @@ int main(int argc, char **argv)
 			continue;
 		}
 		slot = face->glyph;
-		to_bitmap(&slot->bitmap, slot->bitmap_left,
-			HEIGHT-slot->bitmap_top);
+		to_bitmap(image, &slot->bitmap, slot->bitmap_left,
+			nglyphs-slot->bitmap_top);
 		pen_x += slot->advance.x >> 6;
 		pen_y += slot->advance.y >> 6;
 	}
 #if WRITE_FILE
-	out_xbm(argv[2], WIDTH, HEIGHT, face->num_glyphs, slot->bitmap.pitch);
+	out_xbm(image, argv[2], face->num_glyphs, slot->bitmap.pitch);
 #else
-	out_xbm(NULL, WIDTH, HEIGHT, face->num_glyphs, slot->bitmap.pitch);
+	out_xbm(image, NULL, face->num_glyphs, slot->bitmap.pitch);
 #endif
 	FT_Done_Face(face);
 	FT_Done_FreeType(library);
+	for(i = 0; i <= nglyphs; i++)
+		free(image[i]);
+	free(image);
 	return 0;
 }
