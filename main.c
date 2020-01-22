@@ -9,7 +9,7 @@
 #include FT_FREETYPE_H
 #include FT_BITMAP_H
 
-#define WRITE_FILE	0	/* write to a file */
+#define WRITE_FILE	1	/* write to a file */
 
 /* some definitions */
 static FT_Library library;
@@ -62,8 +62,8 @@ static void out_header(unsigned char **image, const char *name,
 	char filename[MAX_PATH];
 	FILE *fp;
 #endif
-	unsigned int y;
-	int x;
+	unsigned int i;
+	int x, y;
 
 #if WRITE_FILE
 	memset(filename, 0, sizeof(filename));
@@ -80,14 +80,18 @@ static void out_header(unsigned char **image, const char *name,
 			pitch*3);
 	fprintf(fp, "const unsigned char BMP_bits[%s][%s] = {\n",
 			"BMP_GLYPHS", "BMP_BPG");
-	for(y = 0; y < nglyphs; y++) {
-		fprintf(fp, "\t{ ");
-		for(x = 0; x < pitch*3; x+=3) {
-			fprintf(fp, "0x%x, 0x%x, 0x%x%s", image[y][x],
-				image[y][x+1], image[y][x+2],
-				(x == (pitch*3-3) ? "" : ", "));
+	for(i = 0; i < nglyphs; i++) {
+		for(y = 0; y < 256; y++) {
+			fprintf(fp, "\t{ ");
+			for(x = 0; x < pitch*3; x+=3) {
+				fprintf(fp, "0x%x, 0x%x, 0x%x%s",
+					image[i][y*pitch+x],
+					image[i][y*pitch+x+1],
+					image[i][y*pitch+x+2],
+					(x == (pitch*3-3) ? "" : ", "));
+			}
+			fprintf(fp, " }%s", (y == 255 ? "\n" : ",\n"));
 		}
-		fprintf(fp, " }%s", (y == (nglyphs-1) ? "\n" : ",\n"));
 	}
 	fprintf(fp, "};\n");
 	fclose(fp);
@@ -102,14 +106,18 @@ static void out_header(unsigned char **image, const char *name,
 			pitch*3);
 	printf("const unsigned char BMP_bits[%s][%s] = {\n",
 			"BMP_GLYPHS", "BMP_BPG");
-	for(y = 0; y < nglyphs; y++) {
-		printf("\t{ ");
-		for(x = 0; x < pitch*3; x+=3) {
-			printf("0x%x, 0x%x, 0x%x%s", image[y][x],
-				image[y][x+1], image[y][x+2],
-				(x == (pitch*3-3) ? "" : ", "));
+	for(i = 0; i < nglyphs; i++) {
+		for(y = 0; y < 256; y++) {
+			printf("\t{ ");
+			for(x = 0; x < pitch*3; x+=3) {
+				printf("0x%x, 0x%x, 0x%x%s",
+					image[i][y*pitch+x],
+					image[i][y*pitch+x+1],
+					image[i][y*pitch+x+2],
+					(x == (pitch*3-3) ? "" : ", "));
+			}
+			printf(" }%s", (y == 255 ? "\n" : ",\n"));
 		}
-		printf(" }%s", (y == (nglyphs-1) ? "\n" : ",\n"));
 	}
 	printf("};\n");
 #undef UNUSED
@@ -165,7 +173,7 @@ int main(int argc, char **argv)
 		if(image[i] != NULL)
 			memset(image[i], 0, sizeof(unsigned char)*pitch*3);
 	}
-	for(g = 0; g < nglyphs; g++) {
+	for(g = 0; g < 256; g++) {
 		glyph_index = FT_Get_Char_Index(face, g);
 		err = FT_Load_Glyph(face, glyph_index, FT_LOAD_RENDER);
 		if(err) {
