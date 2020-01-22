@@ -41,13 +41,14 @@ static void to_bitmap(unsigned char **image, FT_Bitmap *bitmap,
 		for(j = x, p = 0; j < x_max; j++, p++) {
 			if(i < 0 || j < 0 || i >= nglyphs || j >= pitch)
 				continue;
-			image[j][i] |= bitmap->buffer[q*bitmap->width+p];
+			image[i][j] |= bitmap->buffer[q*pitch+p];
 		}
 	}
 }
 /* Make an output file with xbm extension.
  */
-static void out_header(unsigned char **image, const char *name, FT_Int nglyphs)
+static void out_header(unsigned char **image, const char *name, FT_Int nglyphs,
+	FT_Int pitch)
 {
 #if WRITE_FILE
 #ifndef MAX_PATH
@@ -68,7 +69,7 @@ static void out_header(unsigned char **image, const char *name, FT_Int nglyphs)
 	fprintf(fp, "#define BMP_GLYPHS\t\t%d\t/* Number of glyphs */\n",
 			nglyphs);
 	fprintf(fp, "#define BMP_BPG\t\t\t%d\t/* Bytes per glyph */\n\n",
-			BPG);
+			pitch);
 	fprintf(fp, "const unsigned char BMP_bits[%s][%s] = {\n",
 			"BMP_GLYPHS", "BMP_BPG");
 	for(y = 0; y < nglyphs; y++) {
@@ -88,7 +89,7 @@ static void out_header(unsigned char **image, const char *name, FT_Int nglyphs)
 	printf("#define BMP_GLYPHS\t\t%d\t/* Number of glyphs */\n",
 			nglyphs);
 	printf("#define BMP_BPG\t\t\t%d\t/* Bytes per glyph */\n\n",
-			BPG);
+			pitch);
 	printf("const unsigned char BMP_bits[%s][%s] = {\n",
 			"BMP_GLYPHS", "BMP_BPG");
 	for(y = 0; y < nglyphs; y++) {
@@ -162,9 +163,9 @@ int main(int argc, char **argv)
 		pen_y += slot->advance.y >> 6;
 	}
 #if WRITE_FILE
-	out_header(image, argv[2], face->num_glyphs);
+	out_header(image, argv[2], face->num_glyphs, slot->bitmap.pitch);
 #else
-	out_header(image, NULL, face->num_glyphs);
+	out_header(image, NULL, face->num_glyphs, slot->bitmap.pitch);
 #endif
 	FT_Done_Face(face);
 	FT_Done_FreeType(library);
