@@ -82,10 +82,18 @@ static void out_header(unsigned char **image, const char *name,
 			"BMP_GLYPHS", "BMP_BPG");
 	for(i = 0; i < nglyphs; i++) {
 		fprintf(fp, "\t{ ");
-		for(x = 0; x < pitch*3; x++) {
-			fprintf(fp, "0x%x%s",
+		for(x = 0; x < pitch*3; x+=3) {
+			fprintf(fp, "0x%x, 0x%x, 0x%x%s",
+#if __BYTE_ORDER == __BIG_ENDIAN
 				image[i][x],
-				(x == (pitch*3-1) ? "" : ", "));
+				image[i][x+1],
+				image[i][x+2],
+#else
+				image[i][x+2],
+				image[i][x+1],
+				image[i][x],
+#endif
+				(x == (pitch*3-3) ? "" : ", "));
 		}
 		fprintf(fp, " }%s", (i == (nglyphs-1) ? "\n" : ",\n"));
 	}
@@ -104,10 +112,18 @@ static void out_header(unsigned char **image, const char *name,
 			"BMP_GLYPHS", "BMP_BPG");
 	for(i = 0; i < nglyphs; i++) {
 		printf("\t{ ");
-		for(x = 0; x < pitch*3; x++) {
-			printf("0x%x%s",
+		for(x = 0; x < pitch*3; x+=3) {
+			printf("0x%x, 0x%x, 0x%x%s",
+#if __BYTE_ORDER == __BIG_ENDIAN
 				image[i][x],
-				(x == (pitch*3-1) ? "" : ", "));
+				image[i][x+1],
+				image[i][x+2],
+#else
+				image[i][x+2],
+				image[i][x+1],
+				image[i][x],
+#endif
+				(x == (pitch*3-3) ? "" : ", "));
 		}
 		printf(" }%s", (i == (nglyphs-1) ? "\n" : ",\n"));
 	}
