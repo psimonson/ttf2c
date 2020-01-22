@@ -53,7 +53,7 @@ static void to_bitmap(unsigned char **image, FT_Bitmap *bitmap,
 /* Make an output file with xbm extension.
  */
 static void out_header(unsigned char **image, const char *name,
-	FT_Bitmap *bitmap)
+	unsigned int nglyphs, int pitch)
 {
 #if WRITE_FILE
 #ifndef MAX_PATH
@@ -74,36 +74,40 @@ static void out_header(unsigned char **image, const char *name,
 	}
 	fprintf(fp, "#define BMP_GLYPHS\t\t%d\t/* Number of glyphs */\n",
 			nglyphs);
+	fprintf(fp, "#define BMP_PITCH\t\t%d\t/* Number of glyphs */\n",
+			pitch);
 	fprintf(fp, "#define BMP_BPG\t\t\t%d\t/* Bytes per glyph */\n\n",
-			bitmap->pitch*3);
+			pitch*3);
 	fprintf(fp, "const unsigned char BMP_bits[%s][%s] = {\n",
 			"BMP_GLYPHS", "BMP_BPG");
-	for(y = 0; y < face->num_glyphs; y++) {
+	for(y = 0; y < nglyphs; y++) {
 		fprintf(fp, "\t{ ");
-		for(x = 0; x < bitmap->pitch*3; x++) {
+		for(x = 0; x < pitch*3; x++) {
 			fprintf(fp, "0x%x%s", image[y][x],
-				(x == (bitmap->pitch*3-1) ? "" : ", "));
+				(x == (pitch*3-1) ? "" : ", "));
 		}
-		fprintf(fp, " }%s", (y == (face->num_glyphs-1) ? "\n" : ",\n"));
+		fprintf(fp, " }%s", (y == (nglyphs-1) ? "\n" : ",\n"));
 	}
-	fprintf(fp, "};\n");
+	fprintf(fp, "\n};\n");
 	fclose(fp);
 #else
 #define UNUSED(x)
 	UNUSED(name);
 	printf("#define BMP_GLYPHS\t\t%d\t/* Number of glyphs */\n",
 			nglyphs);
+	printf("#define BMP_PITCH\t\t%d\t/* Number of glyphs */\n",
+			pitch);
 	printf("#define BMP_BPG\t\t\t%d\t/* Bytes per glyph */\n\n",
-			bitmap->pitch*3);
+			pitch*3);
 	printf("const unsigned char BMP_bits[%s][%s] = {\n",
 			"BMP_GLYPHS", "BMP_BPG");
-	for(y = 0; y < face->num_glyphs; y++) {
+	for(y = 0; y < nglyphs; y++) {
 		printf("\t{ ");
-		for(x = 0; x < bitmap->pitch*3; x++) {
+		for(x = 0; x < pitch*3; x++) {
 			printf("0x%x%s", image[y][x],
-				(x == (bitmap->pitch*3-1) ? "" : ", ");
+				(x == (pitch*3-1) ? "" : ", "));
 		}
-		printf(" }%s", (y == (face->num_glyphs-1) ? "\n" : ",\n"));
+		printf(" }%s", (y == (nglyphs-1) ? "\n" : ",\n"));
 	}
 	printf("\n};\n");
 #undef UNUSED
@@ -116,6 +120,7 @@ int main(int argc, char **argv)
 	unsigned char **image;
 	FT_GlyphSlot slot;
 	int i, g, pitch;
+	int glyph_index;
 
 	if(argc < 2 || argc > 3) {
 		fprintf(stderr, "Usage: %s <font.ttf> <out-name>\n", argv[0]);
@@ -138,6 +143,13 @@ int main(int argc, char **argv)
 		FT_Done_FreeType(library);
 		exit(1);
 	}
+	glyph_index = FT_Get_Char_Index(face, 'A');
+	if((err = FT_Load_Glyph(face, glyph_index, FT_LOAD_RENDER))) {
+		fprintf(stderr, "Error: %s\n", FT_Error_String(err));
+		FT_Done_Face(face);
+		FT_Done_FreeType(library);
+		exit(1);
+	}
 	nglyphs = face->num_glyphs;
 	pitch = face->glyph->bitmap.pitch;
 	image = malloc(sizeof(unsigned char *)*nglyphs);
@@ -152,7 +164,7 @@ int main(int argc, char **argv)
 			memset(image[i], 0, sizeof(unsigned char)*pitch*3);
 	}
 	for(g = 0; g < nglyphs; g++) {
-		int glyph_index = FT_Get_Char_Index(face, g);
+		glyph_index = FT_Get_Char_Index(face, g);
 		err = FT_Load_Glyph(face, glyph_index, FT_LOAD_RENDER);
 		if(err) {
 			fprintf(stderr, "Warning: %s\n",
@@ -164,11 +176,11 @@ int main(int argc, char **argv)
 	}
 #if WRITE_FILE
 	if(argc == 3)
-		out_header(image, argv[2], &slot->bitmap);
+		out_header(image, argv[2], nglyphs, pitch);
 	else
-		out_header(image, "font", &slot->bitmap);
+		out_header(image, "font", nglyphs, pitch);
 #else
-	out_header(image, NULL, &slot->bitmap);
+	out_header(image, NULL, nglyphs, pitch);
 #endif
 	FT_Done_Face(face);
 	FT_Done_FreeType(library);
