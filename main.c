@@ -9,7 +9,7 @@
 #include FT_FREETYPE_H
 #include FT_BITMAP_H
 
-#define WRITE_FILE	1	/* write to a file */
+#define WRITE_FILE	0	/* write to a file */
 
 /* some definitions */
 static FT_Library library;
@@ -82,13 +82,14 @@ static void out_header(unsigned char **image, const char *name,
 			"BMP_GLYPHS", "BMP_BPG");
 	for(y = 0; y < nglyphs; y++) {
 		fprintf(fp, "\t{ ");
-		for(x = 0; x < pitch*3; x++) {
-			fprintf(fp, "0x%x%s", image[y][x],
-				(x == (pitch*3-1) ? "" : ", "));
+		for(x = 0; x < pitch*3; x+=3) {
+			fprintf(fp, "0x%x, 0x%x, 0x%x%s", image[y][x],
+				image[y][x+1], image[y][x+2],
+				(x == (pitch*3-3) ? "" : ", "));
 		}
 		fprintf(fp, " }%s", (y == (nglyphs-1) ? "\n" : ",\n"));
 	}
-	fprintf(fp, "\n};\n");
+	fprintf(fp, "};\n");
 	fclose(fp);
 #else
 #define UNUSED(x)
@@ -103,13 +104,14 @@ static void out_header(unsigned char **image, const char *name,
 			"BMP_GLYPHS", "BMP_BPG");
 	for(y = 0; y < nglyphs; y++) {
 		printf("\t{ ");
-		for(x = 0; x < pitch*3; x++) {
-			printf("0x%x%s", image[y][x],
-				(x == (pitch*3-1) ? "" : ", "));
+		for(x = 0; x < pitch*3; x+=3) {
+			printf("0x%x, 0x%x, 0x%x%s", image[y][x],
+				image[y][x+1], image[y][x+2],
+				(x == (pitch*3-3) ? "" : ", "));
 		}
 		printf(" }%s", (y == (nglyphs-1) ? "\n" : ",\n"));
 	}
-	printf("\n};\n");
+	printf("};\n");
 #undef UNUSED
 #endif
 }
