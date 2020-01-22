@@ -16,7 +16,7 @@
 static FT_Library library;
 static FT_Face face;
 static FT_Error err;
-static FT_Int nglyphs, pitch;
+static FT_Int nglyphs;
 /* Get the error string from a freetype error.
  */
 const char *get_error_string(FT_Error err)
@@ -31,17 +31,23 @@ const char *get_error_string(FT_Error err)
 /* Put image to bitmap.
  */
 static void to_bitmap(unsigned char **image, FT_Bitmap *bitmap,
-	FT_Int x, FT_Int y)
+	FT_Glyph_Metrics *metrics)
 {
-	FT_Int i, j, p, q;
-	FT_Int x_max = x + bitmap->width;
-	FT_Int y_max = y + bitmap->rows;
+	FT_Int col_start = metrics->horiBearingX >> 6;
+	FT_Int row_start = metrics->horiBearingY >> 6;
+	FT_UInt y;
+	FT_Int x;
 
-	for(i = y, q = 0; i < y_max; i++, q++) {
-		for(j = x, p = 0; j < x_max; j++, p++) {
-			if(i < 0 || j < 0 || i >= nglyphs || j >= pitch)
+	for(y = 0; y < bitmap->rows; y++) {
+		FT_UInt row = row_start + y;
+		for(x = 0; x < bitmap->pitch; x+=3) {
+			FT_Int col = col_start + x;
+			if(col < 0 || col >= bitmap->pitch
+				|| row >= bitmap->rows)
 				continue;
-			image[i][j] |= bitmap->buffer[q*pitch+p];
+			image[y][x] |= bitmap->buffer[(row*bitmap->pitch+col)*3];
+			image[y][x+1] |= bitmap->buffer[(row*bitmap->pitch+col)*3+1];
+			image[y][x+2] |= bitmap->buffer[(row*bitmap->pitch+col)*3+2];
 		}
 	}
 }
@@ -110,8 +116,7 @@ int main(int argc, char **argv)
 {
 	unsigned char **image;
 	FT_GlyphSlot slot;
-	int pen_x, pen_y, g;
-	int i;
+	int i, g, pitch;
 
 	if(argc < 2 || argc > 3) {
 		fprintf(stderr, "Usage: %s <font.ttf> <out-name>\n", argv[0]);
@@ -128,13 +133,14 @@ int main(int argc, char **argv)
 		FT_Done_FreeType(library);
 		exit(1);
 	}
-	if((err = FT_Set_Char_Size(face, 16*64, 0, 300, 0))) {
+	if((err = FT_Set_Char_Size(face, 16*64, 16*64, 100, 100))) {
 		fprintf(stderr, "Error: %s\n", FT_Error_String(err));
 		FT_Done_Face(face);
 		FT_Done_FreeType(library);
 		exit(1);
 	}
 	nglyphs = face->num_glyphs;
+	pitch = face->glyph->bitmap.pitch;
 	image = malloc(sizeof(unsigned char *)*nglyphs);
 	if(image == NULL) {
 		FT_Done_Face(face);
@@ -142,12 +148,10 @@ int main(int argc, char **argv)
 		exit(2);
 	}
 	for(i = 0; i < nglyphs; i++) {
-		image[i] = malloc(sizeof(unsigned char)*BPG);
+		image[i] = malloc(sizeof(unsigned char)*pitch*3);
 		if(image[i] != NULL)
-			memset(image[i], 0, sizeof(unsigned char)*BPG);
+			memset(image[i], 0, sizeof(unsigned char)*pitch*3);
 	}
-	pen_x = 100;
-	pen_y = 100;
 	for(g = 0; g < nglyphs; g++) {
 		int glyph_index = FT_Get_Char_Index(face, g);
 		err = FT_Load_Glyph(face, glyph_index, FT_LOAD_RENDER);
@@ -157,15 +161,12 @@ int main(int argc, char **argv)
 			continue;
 		}
 		slot = face->glyph;
-		to_bitmap(image, &slot->bitmap, slot->bitmap_left,
-			nglyphs-slot->bitmap_top);
-		pen_x += slot->advance.x >> 6;
-		pen_y += slot->advance.y >> 6;
+		to_bitmap(image, &slot->bitmap, &slot->metrics);
 	}
 #if WRITE_FILE
-	out_header(image, argv[2], face->num_glyphs, slot->bitmap.pitch);
+	out_header(image, argv[2], face->num_glyphs, pitch);
 #else
-	out_header(image, NULL, face->num_glyphs, slot->bitmap.pitch);
+	out_header(image, NULL, face->num_glyphs, face->glyph->bitmap.pitch);
 #endif
 	FT_Done_Face(face);
 	FT_Done_FreeType(library);
