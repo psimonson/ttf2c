@@ -9,7 +9,7 @@
 #include FT_FREETYPE_H
 #include FT_BITMAP_H
 
-#define WRITE_FILE	0	/* write to a file */
+#define WRITE_FILE	1	/* write to a file */
 
 /* some definitions */
 static FT_Library library;
@@ -129,7 +129,7 @@ int main(int argc, char **argv)
 	int glyph_index;
 
 	if(argc < 2 || argc > 3) {
-		fprintf(stderr, "Usage: %s <font.ttf> [out-name]\n", argv[0]);
+		fprintf(stderr, "Usage: %s <font.ttf> <out-name>\n", argv[0]);
 		return 1;
 	}
 	if((err = FT_Init_FreeType(&library))) {
