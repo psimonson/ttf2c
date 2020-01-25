@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-std=c89 -Wall -Wextra -Wno-unused-parameter
+CFLAGS=-std=c89 -Wall -Wextra -Wno-unused-parameter -g
 CFLAGS+=$(shell pkg-config freetype2 --cflags)
 LDFLAGS=$(shell pkg-config freetype2 --libs) -lm
 TARGET=ttf2c

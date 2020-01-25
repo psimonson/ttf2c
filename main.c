@@ -30,23 +30,17 @@ const char *get_error_string(FT_Error err)
 /* Put image to bitmap.
  */
 static void to_bitmap(unsigned char **image, FT_Bitmap *bitmap,
-	FT_Glyph_Metrics *metrics)
+	FT_Int nglyphs)
 {
-	FT_Int col_start = metrics->horiBearingX >> 6;
-	FT_Int row_start = metrics->horiBearingY >> 6;
-	FT_UInt y;
-	FT_Int x;
+	FT_UInt x, y;
 
 	for(y = 0; y < bitmap->rows; y++) {
-		FT_UInt row = row_start + y;
-		for(x = 0; x < bitmap->pitch; x+=3) {
-			FT_Int col = col_start + x;
-			if(col < 0 || col >= bitmap->pitch
-				|| row >= bitmap->rows)
+		for(x = 0; x < bitmap->width; x+=3) {
+			if(x >= bitmap->width || y >= bitmap->rows)
 				continue;
-			image[row][col] |= bitmap->buffer[(row*bitmap->pitch+col)*3];
-			image[row][col+1] |= bitmap->buffer[(row*bitmap->pitch+col)*3+1];
-			image[row][col+2] |= bitmap->buffer[(row*bitmap->pitch+col)*3+2];
+			image[nglyphs][(y*bitmap->pitch+x)*3] |= bitmap->buffer[(y*bitmap->pitch+x)*3];
+			image[nglyphs][(y*bitmap->pitch+x)*3+1] |= bitmap->buffer[(y*bitmap->pitch+x)*3+1];
+			image[nglyphs][(y*bitmap->pitch+x)*3+2] |= bitmap->buffer[(y*bitmap->pitch+x)*3+2];
 		}
 	}
 }
@@ -169,16 +163,16 @@ int main(int argc, char **argv)
 		if(image[i] != NULL)
 			memset(image[i], 0, sizeof(unsigned char)*pitch*3);
 	}
-	for(g = 0; g < 256; g++) {
+	for(g = 0; g < nglyphs; g++) {
 		glyph_index = FT_Get_Char_Index(face, g);
-		err = FT_Load_Glyph(face, glyph_index, FT_LOAD_RENDER);
+		err = FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT);
 		if(err) {
 			fprintf(stderr, "Warning: %s\n",
 				get_error_string(err));
 			continue;
 		}
 		slot = face->glyph;
-		to_bitmap(image, &slot->bitmap, &slot->metrics);
+		to_bitmap(image, &slot->bitmap, g);
 	}
 #if WRITE_FILE
 	if(argc == 3)
