@@ -18,7 +18,7 @@ $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 dist: dist-clean
-	@cd ..; tar cv --exclude=.git $(TARGET) | xz -9 > ../$(TARGET)-$(VERSION).txz
+	@cd ..; tar cv --exclude=.git $(TARGET) | xz -9 > $(TARGET)-$(VERSION).txz
 
 dist-clean: clean
 
