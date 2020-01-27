@@ -1,9 +1,16 @@
 CC=gcc
 CFLAGS=-std=c89 -Wall -Wextra -Wno-unused-parameter
-CFLAGS+=$(shell pkg-config freetype2 --cflags)
-LDFLAGS=$(shell pkg-config freetype2 --libs) -lm
 TARGET=ttf2c
 VERSION=1.0
+
+DEBUG=no
+ifeq ($(DEBUG),yes)
+CFLAGS+=-g
+else
+CFLAGS+=-O2
+endif
+CFLAGS+=$(shell pkg-config freetype2 --cflags)
+LDFLAGS=$(shell pkg-config freetype2 --libs) -lm
 
 SRCS=$(wildcard *.c)
 OBJS=$(SRCS:.c=.c.o)
