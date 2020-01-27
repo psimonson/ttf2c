@@ -34,7 +34,7 @@ void process_font(TTF_Font *font)
 						printf("0x%x%s", *pixels++,
 							(x == (s->pitch-1) ? "" : ", "));
 					}
-					printf(" }%s", (y < (s->h-1) ? ",\n" : "\n");
+					printf(" }%s", (y < (s->h-1) ? ",\n" : "\n"));
 				}
 				SDL_FreeSurface(s);
 			}
