@@ -14,14 +14,13 @@
 void process_font(TTF_Font *font)
 {
 	SDL_Surface *s = NULL;
-	SDL_Color color = { 0xff, 0xff, 0xff, 0x00 };
+	SDL_Color color = {255, 255, 255, 0};
 	unsigned short ch;
 	int temp;
 
 	TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
 	printf("#define BMP_NGLYPHS\t\t%d\t/* Number of glyphs */\n", NGLYPHS);
-	printf("#define BMP_PITCH\t\t%d\t/* Pitch of a glyph */\n", 8);
-	printf("const unsigned char BMP_bits[BMP_NGLYPHS][BMP_PITCH] = {\n");
+	printf("const unsigned char *BMP_bits[BMP_NGLYPHS] = {\n");
 	for(ch = 0; ch < NGLYPHS; ch++) {
 		temp = TTF_GlyphIsProvided(font, ch);
 		if(temp) {
@@ -32,16 +31,16 @@ void process_font(TTF_Font *font)
 				for(y = 0; y < s->h; y++) {
 					printf("\t{ ");
 					for(x = 0; x < s->pitch; x++) {
-						printf("0x%X%s", *pixels++,
+						printf("0x%x%s", *pixels++,
 							(x == (s->pitch-1) ? "" : ", "));
 					}
-					printf(" }%s", (y == (s->h-1) ? "\n" : ",\n"));
+					printf(" }%s", (y < (s->h-1) ? ",\n" : "\n");
 				}
 				SDL_FreeSurface(s);
 			}
 		}
 	}
-	printf("};\n");
+	printf("}\n};\n");
 }
 /* Program to make a C array out of a TTF font.
  */
