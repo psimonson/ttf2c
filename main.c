@@ -9,7 +9,7 @@
 #include FT_FREETYPE_H
 #include FT_BITMAP_H
 
-#define WRITE_FILE	1	/* write to a file */
+#define WRITE_FILE	0	/* write to a file */
 
 /* some definitions */
 static FT_Library library;
@@ -37,16 +37,14 @@ static void to_bitmap(unsigned char **image, FT_Bitmap *bitmap,
 	FT_UInt y;
 	FT_Int x;
 
-	for(y = 0; y < bitmap->rows; y++) {
+	for(y = 0; y < metrics->height; y++) {
 		FT_UInt row = row_start + y;
-		for(x = 0; x < bitmap->pitch; x+=3) {
+		for(x = 0; x < metrics->width; x++) {
 			FT_Int col = col_start + x;
 			if(col < 0 || col >= bitmap->pitch
 				|| row >= bitmap->rows)
 				continue;
-			image[row][col] |= bitmap->buffer[(row*bitmap->pitch+col)*3];
-			image[row][col+1] |= bitmap->buffer[(row*bitmap->pitch+col)*3+1];
-			image[row][col+2] |= bitmap->buffer[(row*bitmap->pitch+col)*3+2];
+			image[row][col] = bitmap->buffer[row*bitmap->pitch+col];
 		}
 	}
 }
