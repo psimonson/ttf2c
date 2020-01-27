@@ -9,8 +9,10 @@ CFLAGS+=-g
 else
 CFLAGS+=-O2
 endif
-CFLAGS+=$(shell pkg-config freetype2 --cflags)
-LDFLAGS=$(shell pkg-config freetype2 --libs) -lm
+CFLAGS+=$(shell pkg-config sdl2 --cflags)
+LDFLAGS=$(shell pkg-config sdl2 --libs)
+LDFLAGS+=$(shell pkg-config SDL2_ttf --libs)
+LDFLAGS+=-lm
 
 SRCS=$(wildcard *.c)
 OBJS=$(SRCS:.c=.c.o)
