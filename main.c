@@ -37,14 +37,14 @@ void save_glyph(TTF_Font *font, unsigned short ch)
 void build_array(TTF_Font *font)
 {
 	int i, temp;
-	printf("\nconst unsigned char *BMP_bits[BMP_NGLYPHS] = {\n");
+	printf("\nconst unsigned char *BMP_bits[BMP_NGLYPHS] = { ");
 	for(i = 0; i < NGLYPHS; i++) {
 		temp = TTF_GlyphIsProvided(font, i);
 		if(temp) {
-			printf("{ BMP_bits%d%s", i,
-				(i < NGLYPHS-1 ? " }, " : " }\n"));
+			printf("{ BMP_bits%d }%s", i,
+				(i < NGLYPHS-1 ? ", " : " "));
 		} else {
-			printf("{ NULL }%s", (i < NGLYPHS-1 ? ", " : "\n"));
+			printf("{ NULL }%s", (i < NGLYPHS-1 ? ", " : " "));
 		}
 	}
 	printf("};\n");
