@@ -41,8 +41,8 @@ void build_array(TTF_Font *font)
 	for(i = 0; i < NGLYPHS; i++) {
 		temp = TTF_GlyphIsProvided(font, i);
 		if(temp) {
-			printf("BMP_bits%d%s", i,
-				(i < NGLYPHS-1 ? ", " : "\n"));
+			printf("{ BMP_bits%d%s", i,
+				(i < NGLYPHS-1 ? " }, " : " }\n"));
 		} else {
 			printf("{ NULL }%s", (i < NGLYPHS-1 ? ", " : "\n"));
 		}
