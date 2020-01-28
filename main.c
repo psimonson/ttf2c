@@ -20,15 +20,18 @@ void save_glyph(TTF_Font *font, unsigned short ch)
 	if(s) {
 		unsigned char *pixels = s->pixels;
 		printf("\nconst unsigned char BMP_bits%d[%d] = {\n",
-			ch, s->h*s->pitch);
+			ch, s->h*s->w);
 		for(i = 0; i < s->h; i++) {
 			printf("0x%x", *pixels++);
-			for(j = 1; j < s->pitch; j++) {
+			for(j = 1; j < s->w; j++) {
 				printf(", 0x%x", *pixels++);
 			}
 			printf("%s", (i < s->h-1 ? ", " : " "));
 		}
 		printf("};\n");
+		printf("const int BMP_len%d = (sizeof(unsigned char)*%d);\n",
+			ch, s->h*s->w);
+		printf("const int BMP_pitch%d = %d;\n", ch, s->pitch);
 		SDL_FreeSurface(s);
 	}
 }
@@ -37,13 +40,14 @@ void save_glyph(TTF_Font *font, unsigned short ch)
 void build_array(TTF_Font *font)
 {
 	int i, temp;
-	printf("\nconst unsigned char (*BMP_bits[BMP_NGLYPHS])[] = { ");
+	printf("\nconst unsigned char (*BMP_bits[BMP_NGLYPHS][3])[] = { ");
 	for(i = 0; i < NGLYPHS; i++) {
 		temp = TTF_GlyphIsProvided(font, i);
 		if(temp) {
-			printf("&BMP_bits%d%s", i, (i < NGLYPHS-1 ? ", " : " "));
+			printf("{ &BMP_bits%d, BMP_len%d, BMP_pitch%d }%s", i, i, i,
+				(i < NGLYPHS-1 ? ", " : " "));
 		} else {
-			printf("NULL%s", (i < NGLYPHS-1 ? ", " : " "));
+			printf("{ NULL, 0, 0 }%s", (i < NGLYPHS-1 ? ", " : " "));
 		}
 	}
 	printf("};\n");
