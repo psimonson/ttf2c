@@ -11,7 +11,7 @@
 #define NGLYPHS		256	/* number of glyphs (all printable characters) */
 /* Save glyph to array.
  */
-void save_glyph(TTF_Font *font, unsigned short ch, int bitnum)
+void save_glyph(TTF_Font *font, unsigned short ch)
 {
 	SDL_Surface *s = NULL;
 	SDL_Color color = {255, 255, 255, 255};
@@ -20,7 +20,7 @@ void save_glyph(TTF_Font *font, unsigned short ch, int bitnum)
 	if(s) {
 		unsigned char *pixels = s->pixels;
 		printf("\nconst unsigned char BMP_bits%d[%d] = {\n",
-			bitnum, s->h*s->w);
+			ch, s->h*s->w);
 		for(i = 0; i < s->h; i++) {
 			printf("\t{ 0x%x", *pixels++);
 			for(j = 1; j < s->pitch; j++) {
@@ -32,22 +32,39 @@ void save_glyph(TTF_Font *font, unsigned short ch, int bitnum)
 		SDL_FreeSurface(s);
 	}
 }
+/* Build array from bits of glyphs.
+ */
+void build_array(TTF_Font *font)
+{
+	int i, temp;
+	printf("\nconst unsigned char *BMP_bits[BMP_NGLYPHS] = {\n");
+	for(i = 0; i < NGLYPHS; i++) {
+		temp = TTF_GlyphIsProvided(font, i);
+		if(temp) {
+			printf("BMP_bits%d%s", i,
+				(i < NGLYPHS-1 ? ", " : "\n"));
+		} else {
+			printf("{ NULL }%s", (i < NGLYPHS-1 ? ", " : "\n"));
+		}
+	}
+	printf("};\n");
+}
 /* Process the font.
  */
 void process_font(TTF_Font *font)
 {
-	static int bitnum = 0;
 	unsigned short ch;
 	int temp;
 
 	TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
 	printf("#define BMP_NGLYPHS\t\t%d\t/* Number of glyphs */\n", NGLYPHS);
-	for(ch = 0; ch < NGLYPHS; ch++, bitnum++) {
+	for(ch = 0; ch < NGLYPHS; ch++) {
 		temp = TTF_GlyphIsProvided(font, ch);
 		if(temp) {
-			save_glyph(font, ch, bitnum);
+			save_glyph(font, ch);
 		}
 	}
+	build_array(font);
 }
 /* Program to make a C array out of a TTF font.
  */
@@ -73,7 +90,6 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error: Could not open font.\n");
 		return 1;
 	}
-	printf("Everything initialised!\n");
 	process_font(font);
 	TTF_CloseFont(font);
 	return 0;
