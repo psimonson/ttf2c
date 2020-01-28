@@ -20,7 +20,7 @@ void save_glyph(TTF_Font *font, unsigned short ch)
 	if(s) {
 		unsigned char *pixels = s->pixels;
 		printf("\nconst unsigned char BMP_bits%d[%d] = {\n",
-			ch, s->h*s->w);
+			ch, s->h*s->pitch);
 		for(i = 0; i < s->h; i++) {
 			printf("0x%x", *pixels++);
 			for(j = 1; j < s->pitch; j++) {
