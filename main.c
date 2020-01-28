@@ -20,10 +20,10 @@ void save_glyph(TTF_Font *font, unsigned short ch)
 	if(s) {
 		unsigned char *pixels = s->pixels;
 		printf("\nconst unsigned char BMP_bits%d[%d] = {\n",
-			ch, s->h*s->w);
+			ch, s->h*s->pitch);
 		for(i = 0; i < s->h; i++) {
 			printf("0x%x", *pixels++);
-			for(j = 1; j < s->w; j++) {
+			for(j = 1; j < s->pitch; j++) {
 				printf(", 0x%x", *pixels++);
 			}
 			printf("%s", (i < s->h-1 ? ", " : " "));
@@ -40,11 +40,16 @@ void save_glyph(TTF_Font *font, unsigned short ch)
 void build_array(TTF_Font *font)
 {
 	int i, temp;
-	printf("\nconst unsigned char (*BMP_bits[BMP_NGLYPHS][3])[] = { ");
+	printf("\nstruct BMP_data {\n"
+			"\tconst unsigned char *bits;\n"
+			"\tconst int length;\n"
+			"\tconst int pitch;\n"
+			"};\n");
+	printf("\nconst struct BMP_data BMP_bits[BMP_NGLYPHS] = { ");
 	for(i = 0; i < NGLYPHS; i++) {
 		temp = TTF_GlyphIsProvided(font, i);
 		if(temp) {
-			printf("{ &BMP_bits%d, BMP_len%d, BMP_pitch%d }%s", i, i, i,
+			printf("{ BMP_bits%d, BMP_len%d, BMP_pitch%d }%s", i, i, i,
 				(i < NGLYPHS-1 ? ", " : " "));
 		} else {
 			printf("{ NULL, 0, 0 }%s", (i < NGLYPHS-1 ? ", " : " "));
