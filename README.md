@@ -1,6 +1,6 @@
-## Simple TTF to XBM converter
+## Simple TTF to C array converter
 
-This is a TTF font to XBM file converter for use with C/C++.
+This is a TTF font to C header file converter for use with C/C++.
 
 ### Developer
 
