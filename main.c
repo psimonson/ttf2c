@@ -1,3 +1,11 @@
+/**
+ * @file main.c
+ * @author Philip R. Simonson
+ * @date 01/20/2020
+ * @brief Simple TTF to C array converter for TrueType Fonts.
+ *************************************************************************
+ */
+
 #ifndef _WIN32
 #define _GNU_SOURCE 1
 #endif
@@ -7,7 +15,6 @@
 #include "SDL.h"
 #include "SDL_ttf.h"
 
-#define WRITE_FILE	0	/* write to a file */
 #define NGLYPHS		256	/* number of glyphs (all printable characters) */
 /* Save glyph to array.
  */
@@ -79,8 +86,8 @@ void process_font(TTF_Font *font)
 int main(int argc, char **argv)
 {
 	TTF_Font *font;
-	if(argc < 2 || argc > 3) {
-		fprintf(stderr, "Usage: %s <font.ttf> <out-name>\n", argv[0]);
+	if(argc != 2) {
+		fprintf(stderr, "Usage: %s <font.ttf>\n", argv[0]);
 		return 1;
 	}
 	if(SDL_Init(SDL_INIT_VIDEO) < 0) {
